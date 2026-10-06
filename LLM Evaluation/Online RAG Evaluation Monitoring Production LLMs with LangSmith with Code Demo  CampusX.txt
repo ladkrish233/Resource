@@ -1,0 +1,2042 @@
+00:00 Today is the last session on rag evals and in today's session we will do online evals.
+00:12 So the basic funda is that till now we have built an eval suite in rag evals.
+00:19 In which we covered about 14-15 metrics and made a proper eval suite.
+00:26 And in the last lecture we tied it up in the form of regression testing.
+00:32 So in nutshell we can say that now our offline evaluation part where you make an application and test it before deployment.
+00:43 We have covered that part.
+00:45 We are also able to detect that by changing a component or a system, is our system not regressing.
+00:53 We have done this testing.
+00:55 So now obviously the next step is that you take your system and deploy it.
+01:03 Right?
+01:04 The system goes online and people start using it.
+01:08 But it does not mean that now you stop evaluating your system.
+01:15 So in an ideal situation when a company deploys a chart bot or an LLM based application.
+01:22 Then after that it continuously evaluates it.
+01:27 And this process is called online evaluation.
+01:31 And the good thing is that this is not a new concept for you.
+01:35 So a few classes back I had shown you a session on the topic of online evals.
+01:42 Although we did not do things practically there.
+01:45 But I explained the whole concept of how to do online evals.
+01:49 I showed you that there are tools such as LandSmith or LandFuse.
+01:54 With the help of which you perform observability plus monitoring plus evaluation.
+02:02 So today we are going to do this.
+02:04 Today we will start the class with this assumption that the software we have made.
+02:09 CampusX Doubt Solver has been deployed.
+02:14 Which means it has gone online.
+02:16 And now we will evaluate it in the online setting.
+02:20 So the whole plan of action will be something like this.
+02:24 So we will do some evaluation tests in the online setup.
+02:31 Continuously in the production environment.
+02:34 And we will keep bringing its data to us.
+02:37 And we will keep observing that data just to see that our system is not breaking.
+02:44 That's the whole idea.
+02:46 So if you look at this chart.
+02:49 So here I have written every metric that was part of our offline eval.
+02:56 If you look here.
+02:58 So these were the metrics of Retriever.
+03:02 Contextual Recall, Contextual Precision.
+03:04 These were the two metrics of the generator.
+03:06 Faithfulness, Answer Relevancy.
+03:08 Then we made the rack pipeline.
+03:11 There were three metrics of it.
+03:13 Contextual Relevancy, Faithfulness, Answer Relevancy.
+03:16 We were checking the correctness, completeness, style at the application level.
+03:20 We were checking the scope, leakage and toxicity at the safety level.
+03:24 And we were measuring latency, cost and reliability at the operational level.
+03:28 Now here is a hard truth.
+03:32 That these are about 14-15 metrics.
+03:36 Which we had built for offline.
+03:40 But unfortunately we can't run all these metrics online.
+03:47 It's not possible at all.
+03:50 And you will tell me the biggest reason for that.
+03:54 Can you tell me why I am saying that we can't use all these metrics online?
+04:00 Can you tell me quickly by writing your answer?
+04:04 Yes, perfect.
+04:06 The reason why Srinivas was right is that we don't have a reference.
+04:13 We don't have a correct answer.
+04:16 So the biggest difference between offline and online evaluation is that
+04:23 at the time of offline evaluation, the golden datasets we make,
+04:29 we also put the correct answer in it.
+04:33 Because of which we can find out a lot of things.
+04:37 For example, if you talk about correctness.
+04:40 That is there any answer given by the chatbot, is it correct or not?
+04:45 Now whether it is correct or not, we will know when you have the right answer.
+04:50 Where will the reference be?
+04:52 So you can make a golden dataset in the offline setup.
+04:56 You can write the correct answer of every question you have.
+04:59 And then you can run the correctness evaluation.
+05:03 But imagine online setup where a completely new question was asked by the user.
+05:08 Do I have the answer to that question?
+05:11 No, I don't know what the user will ask in the future, so I won't have the answer.
+05:16 And if I don't have the answer to that question,
+05:19 can I ever measure correctness in online setup?
+05:23 The answer is no.
+05:25 So in simple words,
+05:27 you can't evaluate the metrics in which we need an answer,
+05:33 basically reference-based metrics,
+05:36 in online setup.
+05:39 Now your job is to write to me in the chat and tell me
+05:45 which metrics are there that need reference,
+05:49 need the correct answer,
+05:51 and which metrics are there that we can't take online.
+05:55 Please let me know.
+05:57 Remember the previous sessions and type.
+06:01 I want you to type this answer.
+06:04 It will also be a good quick revision.
+06:07 Now I will ask you to tell me the answer.
+06:10 Do we need the correct answer for recall?
+06:14 The answer is yes.
+06:16 We have to tell you what the correct chunk looks like.
+06:20 And that is why we won't be able to measure contextual recall in online setup.
+06:26 Same with precision.
+06:28 We need it in precision too, so we can't measure it.
+06:31 Faithfulness is a reference-free metric.
+06:35 Answer relevancy is also reference-free.
+06:40 So we can measure these.
+06:42 Contextual relevancy is also reference-free.
+06:45 Faithfulness has been added.
+06:47 Answer relevancy has also been added.
+06:49 Correctness is something for which we need the correct answer.
+06:53 So we won't be able to measure it online.
+06:55 We won't be able to measure completeness too.
+06:58 Style is reference-free.
+07:00 We can measure it.
+07:02 Talking about safety, most of them are reference-free.
+07:06 So scope, leakage, toxicity,
+07:08 you can measure all these in online setup.
+07:11 And you don't need any reference in your operational one
+07:15 because these are not measured, they are just logged.
+07:18 So you can measure latency, cost, reliability,
+07:21 you can do all these in online setup.
+07:24 So essentially, you won't be able to run these and these in online setup.
+07:31 Apart from these, you can run all the rest.
+07:34 Now I am doing the work a little simple.
+07:37 What I am doing is, I won't perform a separate component-level evaluation of the generator.
+07:44 I will simply take out these three metrics of the rag pipeline.
+07:50 Basically, I will run rag triad in online setup.
+07:54 Also, I won't measure style in online setup.
+08:02 There are two reasons for this.
+08:04 First, we have less time now.
+08:09 How much should we do in a two-hour session?
+08:11 Second reason is that style doesn't deviate much.
+08:15 If your style number is around 80 in offline setup,
+08:22 then it will never happen that suddenly when your chatbot goes online, it comes to 30.
+08:27 Because style is something that won't vary that much.
+08:32 For this reason, I am not including style in my online eval suite.
+08:38 So I am not measuring it right now.
+08:40 We can theoretically do it.
+08:42 There is no need.
+08:44 Rest, scope, leakage, toxicity, you can do all these in online setup.
+08:52 I won't do all three.
+08:54 I will show you one.
+08:56 Rest, everything will be the same.
+08:58 You will be able to do it yourself.
+09:00 So I will show you toxicity from this.
+09:04 I have done toxicity from safety.
+09:07 In operational, I will show you latency and cost.
+09:13 Reliability, actually for reliability, we will have to use some external software tools.
+09:21 Like Grafana and Prometheus.
+09:23 It is beyond the scope of this lecture.
+09:26 That's why I am not covering it.
+09:28 For now, these things will be in our online eval suite.
+09:35 To measure quality, we will work on three metrics.
+09:39 One will be contextual relevancy.
+09:43 Second will be faithfulness.
+09:45 And third will be answer relevance.
+09:48 In safety, all three can do it.
+09:51 But I will show you only one because of time.
+09:54 And it will be toxicity.
+09:56 In operational, we will do two.
+10:00 One will be latency.
+10:02 And second will be cost.
+10:04 So we will work on these six metrics.
+10:10 We will make an online eval suite of these six metrics.
+10:14 Using a tool called Langsmith.
+10:17 So this is the purpose of our class today.
+10:20 In today's class, you will learn that once your software is deployed,
+10:24 how you monitor it continuously in online setup.
+10:28 How you evaluate it continuously.
+10:30 This is the goal of our class today.
+10:32 So my strategy is that we will first cover the operational metrics.
+10:39 Meaning we will set up these first.
+10:42 Setting these is the easiest.
+10:44 Because as you get the tracing done.
+10:47 Basically, as you get every trace locked in Langsmith.
+10:51 In Langsmith, our system automatically starts fetching its latency and cost.
+10:57 So you don't have to do anything.
+10:59 You have to simply connect your application to Langsmith.
+11:02 And this will be the part.
+11:04 After that, I will show you the safety metric.
+11:07 And after that, I will show you the quality metric.
+11:11 And then we will do more interesting things.
+11:15 We will make our own dashboard.
+11:17 You will see everything logged in that dashboard.
+11:20 I will teach you how to make the measurements.
+11:22 If there is a threshold break.
+11:24 Like in the last hour, if our faithfulness score is going down from a certain threshold.
+11:30 Then raise the alert.
+11:32 I will teach you how to do this.
+11:34 So the whole thing will be interesting.
+11:36 So yeah, that's the setup.
+11:39 That's the plan.
+11:41 Now let's start the session.
+11:43 So I have written these steps.
+11:45 We have to carry out these steps one by one.
+11:48 So that the session will be completed.
+11:50 We just need our code.
+11:52 So I will show you.
+11:55 This is our code.
+11:57 Right?
+11:58 This is our code on which we have been working for so many days.
+12:01 Let's start working from here.
+12:04 So first of all, what we have to do.
+12:06 We have to go to Langsmith and make a new project.
+12:10 Because we have to connect our deployed project and Langsmith.
+12:16 So for that you have to go to smith.langchain.com.
+12:22 This is the URL.
+12:23 Here you have to make an account.
+12:25 I have simply logged in to Google.
+12:27 And here you can see that you have to go to the Tracing tab.
+12:31 So when you go to the Tracing tab for the first time.
+12:33 Then it will show you that no tracing project found.
+12:36 We went to all applications.
+12:38 And here we clicked on the plus button.
+12:43 We are creating a new application from here.
+12:45 We are calling it CampusX Doubt Solver.
+12:48 Create application.
+12:50 A tag value already.
+12:52 I was actually working.
+12:53 That's why this name is coming from the beginning.
+12:55 And some problems are happening.
+12:56 Let's make it simple.
+12:58 Let's call it CX as in CampusX Doubt Solver.
+13:04 So that there is no naming conflict.
+13:06 We have created this.
+13:08 And this is our project view.
+13:11 CX Doubt Solver.
+13:12 This is our current application.
+13:14 Inside Langsmith.
+13:16 Now what you have to do is first of all.
+13:18 Connect this application to your code.
+13:22 For that you have to go to .env.
+13:26 And here first of all.
+13:28 You have to generate an API key.
+13:30 This button.
+13:31 If you click on it.
+13:33 Then an API key will be generated.
+13:35 Obviously you can see my API key.
+13:37 But don't worry.
+13:38 I will delete this project after class.
+13:40 So I will copy this.
+13:42 And I will go back to my code.
+13:44 Here is my .env file.
+13:46 In which my openai API key is already there.
+13:52 Here I will add the rest of the lines.
+13:54 See this.
+13:56 Langsmith tracing.
+13:57 True.
+13:58 Langsmith endpoint.
+13:59 Langsmith API key which I just generated.
+14:02 Project name.
+14:03 CX Doubt Solver which we just made.
+14:05 And we don't want the key of Anthropics.
+14:07 So I will remove this thing.
+14:09 And I will save this file.
+14:11 That's it.
+14:12 Simple process.
+14:13 We made a new application.
+14:15 And we copied and pasted the environment variables of that application.
+14:20 And we are done.
+14:21 Now our code is connected to our Langsmith application.
+14:25 Let me run a pipeline and see.
+14:29 Whether it is getting logged or not.
+14:31 Whether its trace is getting captured or not in Langsmith.
+14:34 So I will open a new terminal window.
+14:37 And we will run this file.
+14:40 Rag pipeline dot py.
+14:42 Here a question is written.
+14:44 What is GSM 8K?
+14:46 So we will simply run this.
+14:49 Python minus m src dot rag underscore pipeline.
+14:58 Entered.
+15:00 Now our code will run here.
+15:02 And whatever things will be there behind the scenes.
+15:07 Question, context will be generated, answer will be generated.
+15:11 We will capture all those traces in Langsmith automatically.
+15:16 Langsmith does it behind the scenes.
+15:18 You don't need to write a single line of code.
+15:21 So let's wait.
+15:23 Here our question is here.
+15:28 This is our answer.
+15:30 This is our context.
+15:33 Now the interesting thing is that if you go here.
+15:37 You will see that automatically in campusx-doubt-solver.
+15:41 In tracing you have captured your first trace.
+15:45 If you click on this trace.
+15:47 You can see that the question was here.
+15:52 And in it your output was here.
+15:56 And your context was here.
+15:59 And not only that.
+16:01 Apart from that you have captured a lot of important information.
+16:05 Such as how much time it took to run this whole code.
+16:09 Which is your latency.
+16:10 4.14 seconds.
+16:12 And how much cost it cost.
+16:14 You can see.
+16:15 This is the cost.
+16:16 0.0004 dollars.
+16:19 So as I said.
+16:20 Exactly the same thing happened.
+16:22 As soon as we connected.
+16:25 We are able to measure these two quantities.
+16:30 Which is latency and cost.
+16:34 We have already started measuring this.
+16:38 We have started the first task.
+16:41 It is not completed.
+16:42 But we have started.
+16:43 Does latency include the time it took for tracing.
+16:46 Tracing happens asynchronously.
+16:49 So it will not take a separate time.
+16:52 It is an asynchronous operation.
+16:56 This thing is working.
+16:57 But there is a problem.
+16:59 I will tell you what the problem is.
+17:01 If you see here.
+17:02 So we are being shown.
+17:05 That your entire end to end operation.
+17:10 In that you are forming a prompt template.
+17:14 And then you.
+17:16 Chat didn't open.
+17:17 As in you are sending the prompt to LLM.
+17:20 LLM is responding by flipping.
+17:22 It takes 4 seconds.
+17:24 After that, whatever answer is coming.
+17:25 We are printing it through the string output parser.
+17:29 Can you sense a problem here?
+17:32 Is there a problem here?
+17:37 Here we are forming a prompt.
+17:39 Here we are sending a question to LLM.
+17:43 The question is being returned.
+17:45 And the answer is being brought.
+17:46 And here we are printing.
+17:48 Were these 3 stages in our rag pipeline?
+17:51 Forming a prompt.
+17:53 Sending a question to LLM.
+17:54 Bringing the answer.
+17:55 Displaying.
+17:56 Or was there anything else?
+17:58 Which is not visible here.
+18:00 This is my question.
+18:02 Once our rag chatbot.
+18:05 Imagine. Exactly.
+18:07 Shrut is asking the right question.
+18:09 Where is retrieval?
+18:11 In this entire sequence.
+18:12 Retrieval is not being discussed.
+18:15 Retrieval is not being discussed.
+18:16 So it doesn't matter.
+18:17 The document that we are fetching from vector database.
+18:19 It is taking time.
+18:21 It is not mentioned here.
+18:22 We have also used a reranker.
+18:25 It is not being mentioned here.
+18:27 So this is the problem.
+18:28 The problem is.
+18:29 That our.
+18:31 The default code.
+18:34 Langsmith.
+18:36 It is simply going to this file.
+18:38 And.
+18:40 I don't know why.
+18:42 But.
+18:43 It is not able to capture this.
+18:45 Okay.
+18:47 So.
+18:48 What do we have to do?
+18:50 We manually.
+18:52 By using traceable decorators.
+18:54 Whatever things we want to capture.
+18:57 We have to capture that.
+18:59 I will tell you what I am going to do.
+19:01 I have.
+19:02 At one place.
+19:03 Written helper code.
+19:05 So.
+19:06 First of all.
+19:07 I.
+19:08 I am copying this code.
+19:10 And.
+19:11 I am coming to the file of rag pipeline.
+19:13 And I am explicitly saying.
+19:15 That.
+19:16 You.
+19:17 This invoke function.
+19:19 Properly.
+19:20 Trace it.
+19:22 And you call it rag pipeline.
+19:24 So that automatically.
+19:26 The retriever.
+19:28 Which is working.
+19:29 That too.
+19:30 Be traceable.
+19:31 This is my first change.
+19:33 And my second change is.
+19:34 That.
+19:35 The same decorator.
+19:37 I will add it to my re-ranker.
+19:39 This is my file.
+19:41 On its invoke function.
+19:43 I said.
+19:44 Trace this re-ranking step.
+19:47 And I named it.
+19:49 Retriever only.
+19:51 Because essentially.
+19:52 Our retrieval is going on inside the re-ranker.
+19:55 Here.
+19:58 We are searching for the.
+20:01 Similar items.
+20:03 And here we are re-ranking it.
+20:05 So after these two changes.
+20:07 What will happen.
+20:08 I will show you.
+20:09 That.
+20:10 As soon as you run this code again.
+20:13 You will run the pipeline again.
+20:16 You would see a change.
+20:18 I will show you.
+20:19 Okay.
+20:20 Same output came.
+20:21 Let's go back here once.
+20:23 And.
+20:24 See this.
+20:25 This time we have captured a second.
+20:28 Trace.
+20:29 This time first of all.
+20:30 See the name has changed.
+20:31 Rag pipeline.
+20:32 Why?
+20:33 Because we have said in the rag pipeline.
+20:36 That you tell the name rag pipeline.
+20:39 Okay.
+20:40 And.
+20:41 This time when you click on it.
+20:43 You will see that additional steps are there.
+20:46 So first.
+20:47 The retriever step.
+20:48 It is added here.
+20:50 And after that.
+20:51 Chat prompt template.
+20:52 Chat open AI.
+20:53 And string output parser.
+20:54 Now our code.
+20:56 It is essentially.
+20:58 Tracing everything.
+21:00 So now.
+21:02 You are getting the correct.
+21:04 Values for latency.
+21:06 See a little more value than before.
+21:08 The previous one was 4.14.
+21:10 It is 4.79.
+21:12 And the previous one was less because we were not considering the retrieval.
+21:16 As a process.
+21:17 As a part of the process.
+21:19 Now that we are considering it.
+21:21 You can see.
+21:22 Time has increased a little.
+21:23 Okay.
+21:24 So.
+21:25 Now we can say.
+21:27 That.
+21:29 This part is done.
+21:31 Means.
+21:32 We are at least able to measure.
+21:34 What is the latency of our system.
+21:36 And what is the cost.
+21:37 We are able to do this.
+21:38 We did not do anything.
+21:40 In simple words.
+21:42 Connected our application to the langsmith.
+21:45 And whenever we.
+21:47 Run the pipeline.
+21:48 So we are capturing the latency cost.
+21:51 In the langsmith.
+21:52 That's it.
+21:53 That's all our progress.
+21:55 Sir.
+21:56 But why it left.
+21:57 Retriever part.
+21:58 And covered generator on its own.
+22:00 Yes.
+22:01 I also felt this a little tricky behavior.
+22:03 That.
+22:04 When it was tracing.
+22:07 Without telling us.
+22:09 So it was only picking the generator part.
+22:14 I don't know why.
+22:15 I also felt this a little confusing.
+22:17 But again.
+22:19 Right now I don't have an answer to this.
+22:21 Why is it so tricky behavior.
+22:23 But the solution to this is.
+22:26 Whenever something is not being traced.
+22:28 I had taught you in the langsmith video.
+22:30 If anything is not being traced.
+22:33 Implicitly.
+22:34 Not being traced.
+22:36 So you explicitly tell him.
+22:38 That we have to trace this too.
+22:39 That's what we did here.
+22:41 Wherever we had to get traces done.
+22:43 We have explicitly added.
+22:46 Decorators.
+22:47 Langsmith.
+22:48 And with the help of that.
+22:49 Tracing started happening.
+22:50 So just think of it as.
+22:52 That there will be no trace in the future.
+22:54 So you put the decorator there.
+22:56 Tracing will happen.
+22:58 This is the conclusion.
+23:00 One more question.
+23:01 Is there a possibility of logging it twice.
+23:03 If we explicitly trace.
+23:04 No no no.
+23:06 Actually it happens in hierarchy.
+23:08 You have put a decorator at the top level.
+23:10 Inside that you want to trace more things.
+23:13 That trace will be made one.
+23:14 The high level one.
+23:16 What you want to do inside that.
+23:18 That is added.
+23:19 But there is never a duplication.
+23:21 I have done this a lot.
+23:23 This will never happen.
+23:24 So guys what we will do now.
+23:26 If we go back.
+23:27 To our plan of action.
+23:29 So what have we done.
+23:31 We have.
+23:33 Made a new project.
+23:35 I will keep checking here.
+23:38 And we generated the API.
+23:40 Put it in the environment file.
+23:42 Run the pipeline and see.
+23:44 The problem was.
+23:45 That the retriever was not being captured.
+23:47 I solved that too and showed you.
+23:49 By the way.
+23:50 For this whole process.
+23:52 For this.
+23:53 Because we have added this code.
+23:55 If you see this code.
+23:57 You will be able to add this.
+23:58 When you have.
+23:59 In your project.
+24:01 Install the landsmith.
+24:02 Install the landsmith is not a big deal.
+24:04 You just have to write UV.
+24:06 Add Landsmith.
+24:09 Landsmith will be added.
+24:10 Ok I have already done it.
+24:12 I had already done this.
+24:14 So I did not show it.
+24:15 After that.
+24:16 This step also happened.
+24:17 Add traceable to rag pipeline.
+24:19 And rerank.
+24:20 I have just done it.
+24:22 Run again.
+24:24 And check latency and cost.
+24:26 Now we have the updated values of.
+24:28 Latency and cost.
+24:29 This part is also done.
+24:30 Let's do this quickly.
+24:32 Run 5 times and collect some data.
+24:34 Because we have to plot the graphs.
+24:36 So we need more.
+24:38 Values and traces.
+24:40 So what I am doing.
+24:42 I am running the pipeline 3-4 times.
+24:44 With different questions.
+24:45 And each time.
+24:46 One trace will be created.
+24:48 I will show you.
+24:49 So now we will add one question.
+24:51 What is MMLU?
+24:53 This question is done.
+24:55 And run it quickly.
+24:57 Then we will change the question.
+24:59 Why do we need LLMEvalves?
+25:01 This can also be a question.
+25:03 Save.
+25:05 I am just creating 4-5 questions.
+25:07 So that in graph.
+25:09 I will show you.
+25:11 So this is the question.
+25:13 So this is the question.
+25:15 So this is the question.
+25:17 So in graph.
+25:18 I will show you.
+25:19 How the latency is varying.
+25:21 How the cost is varying.
+25:23 To show you.
+25:24 So we are running again.
+25:26 Why do we need evals?
+25:28 This question.
+25:29 What else can be?
+25:31 This can be a question.
+25:33 What are.
+25:35 LLMEvalves?
+25:37 Let's run this too.
+25:39 So 2 questions were there before.
+25:41 2 more were done.
+25:43 Any other question that we have read in this course.
+25:45 What else can we ask?
+25:47 What are LLMEvalves?
+25:49 What are.
+25:51 LLMEvalves?
+25:53 This is also a question that I have taught you.
+25:55 Let's run this too.
+25:57 Let's see one more question.
+26:01 What are model evals?
+26:05 Or we can read this.
+26:07 What is.
+26:09 The difference.
+26:11 Between.
+26:13 Model evals and.
+26:15 Application evals.
+26:17 Let's run this too.
+26:19 Let's run this too.
+26:21 And let's do one more question.
+26:23 Let's do a benchmark.
+26:25 Let's do a benchmark.
+26:27 Any other question.
+26:29 What are.
+26:31 Benchmarks.
+26:33 This is also a question.
+26:35 And that's it.
+26:37 That's enough.
+26:39 Basically we are trying to replicate.
+26:41 Traffic.
+26:43 When your.
+26:45 Application gets deployed.
+26:47 People will keep asking questions.
+26:49 We are tracing every question.
+26:51 Over time we will have.
+26:53 Traces in our system.
+26:55 Since it is not deployed yet.
+26:57 I am doing this manually.
+26:59 And one person is doing it.
+27:01 In a real world scenario.
+27:03 People will keep asking questions.
+27:05 And everything will get logged.
+27:07 So if I reload this.
+27:09 We will have 6-7.
+27:11 Traces.
+27:13 What are benchmarks.
+27:15 What is the difference between what are online evals.
+27:17 What are LLME evals. Why do we need this.
+27:19 So in total.
+27:21 We have 8-9.
+27:23 Traces.
+27:25 Now let's start.
+27:27 An interesting task.
+27:29 So first of all.
+27:31 We will prepare a dashboard.
+27:33 We will prepare a dashboard.
+27:35 We will put all our.
+27:37 Charts.
+27:39 The idea of the dashboard is very simple.
+27:41 That at any point of time.
+27:43 I will go and see that dashboard.
+27:45 So I will get a complete idea.
+27:47 That how is the health of my application.
+27:49 How is its latency.
+27:51 How much cost is being consumed.
+27:53 How are the safety metrics.
+27:55 How are the quality metrics.
+27:57 Everything will be shown to me in that dashboard.
+27:59 And I will set up my alerts.
+28:01 That if it is going below a threshold.
+28:03 In a given time interval.
+28:05 So an alert will be raised.
+28:07 On Slack.
+28:09 Or some other software.
+28:11 So how to do it.
+28:13 I will tell you. First of all.
+28:15 You have to go to.
+28:17 Monitoring.
+28:19 You have to go here.
+28:21 Now there are two possibilities here.
+28:23 One is Langsmith.
+28:25 Makes his own dashboard.
+28:27 But if you want.
+28:29 You can make your own custom dashboard.
+28:31 So see.
+28:33 As soon as I went to monitoring.
+28:35 I can see the dashboard automatically.
+28:37 Which has data.
+28:39 But I will not use this.
+28:41 I will make my own dashboard.
+28:43 For that what you have to do.
+28:45 Look here. Prebuilt and custom option.
+28:47 Right.
+28:49 So when you are going to custom.
+28:51 It says no dashboard found.
+28:53 Basically we have not made any dashboard for our project.
+28:55 So what I will do is.
+28:57 Click on this button.
+28:59 I will create a new dashboard.
+29:01 And we can name it.
+29:03 CX.
+29:05 Doubt.
+29:07 Solver dashboard.
+29:09 Here you can add a description.
+29:11 I have added personal project.
+29:13 But you will add proper description.
+29:15 And after that.
+29:17 You have to click on create.
+29:19 This will create a.
+29:21 Custom dashboard.
+29:23 Now what we can do.
+29:25 In this dashboard.
+29:27 You can create charts.
+29:29 I will create two charts.
+29:31 In one chart.
+29:33 I will create P95 latency.
+29:35 And in one chart.
+29:37 I will create.
+29:39 Average cost.
+29:41 I will show you how.
+29:43 In fact I will close this.
+29:45 I will show you again.
+29:47 How you will reach.
+29:49 This is your tracing window.
+29:51 Where all your traces are gathering.
+29:53 In real time.
+29:55 Customers are coming.
+29:57 Tracing is happening.
+29:59 And then I will go to monitoring.
+30:01 Here.
+30:03 This is my dashboard.
+30:05 This is prebuilt one.
+30:07 If you will see on prebuilt one.
+30:09 Then you will see all this.
+30:11 We don't care about this.
+30:13 We have to go to custom one.
+30:15 This is our custom one.
+30:17 But there are no charts in custom one.
+30:19 Now I will add my first chart.
+30:21 How to add chart.
+30:23 Here you can see plus chart button.
+30:25 Now you.
+30:27 Will tell me what is your first chart name.
+30:29 Since we are creating a latency chart.
+30:31 We will write latency.
+30:33 P95.
+30:35 We are capturing P95 latency.
+30:37 From here you have to select the project.
+30:39 So we are selecting.
+30:41 CX doubt solver.
+30:43 Here you can tell me.
+30:45 Which metric you want to track.
+30:47 I want to track latency.
+30:49 Now it is saying in latency.
+30:51 What you have to track in latency.
+30:53 Average latency.
+30:55 Total latency.
+30:57 What you have to do.
+30:59 From here we will select percentile.
+31:01 In percentile we will select 95.
+31:03 So P95 latency is done.
+31:05 Rest everything is fine.
+31:07 We will click on create.
+31:11 And see guys.
+31:13 Here is your P95 latency.
+31:15 And in this.
+31:17 See this.
+31:19 By the way all these charts.
+31:21 Are in a given time period.
+31:23 In this there is a time period.
+31:25 Which you can change from here.
+31:27 Like last one hour.
+31:29 Last three hours.
+31:31 Last six hours.
+31:33 Last thirty days.
+31:35 So from this you can always.
+31:37 Find out how in the last X amount of time.
+31:39 A particular metric is performing.
+31:41 So for now we will set it.
+31:43 To last one hour.
+31:45 And in last one hour.
+31:47 Here is our P95 latency score.
+31:49 I hope you are understanding.
+31:51 Now I will quickly.
+31:53 Create one more chart.
+31:55 For cost.
+31:57 Average cost.
+31:59 So again I will click on plus chart.
+32:01 And we will name this metric.
+32:03 Average cost.
+32:05 Same project.
+32:07 CX doubt solver.
+32:09 This time we.
+32:11 Are holding the cost.
+32:13 Now see here.
+32:15 Input cost is different.
+32:17 You can analyze.
+32:19 Input cost separately.
+32:21 Output cost separately.
+32:23 I have told you that.
+32:25 Input charges are different.
+32:27 Output charges are different.
+32:29 So you can create charts separately.
+32:31 For now I will analyze total cost.
+32:33 And I will not sum.
+32:35 I don't want to know.
+32:37 In last one hour.
+32:39 How much total I had to pay.
+32:41 Instead I want to know.
+32:43 In last one hour.
+32:45 How much I had to pay to answer.
+32:47 So I will select average.
+32:49 And that's it.
+32:51 I will click on create.
+32:53 And here is my average cost.
+32:55 Last one hour.
+32:57 Again.
+32:59 You can see how easy it is.
+33:01 And in the same way.
+33:03 You will create your metrics.
+33:05 And then you will create charts.
+33:07 On those metrics.
+33:09 I really hope you are understanding.
+33:11 Now the interesting thing is.
+33:13 You get the option to create alerts.
+33:15 I will show you.
+33:17 If you want.
+33:19 You can create alerts.
+33:21 And here is the alert tab.
+33:23 And we haven't created any alert.
+33:25 We will go to create alert.
+33:27 And we will select a project.
+33:29 We can name it.
+33:31 Let's say we are creating an alert.
+33:33 On latency.
+33:35 On P95 latency.
+33:37 And our logic of alert is.
+33:39 That if in last one hour.
+33:41 Our P95 latency.
+33:45 Is more than 7 seconds.
+33:47 Then there is some problem in the system.
+33:49 Raise an alert.
+33:51 So I will show you how to setup this.
+33:53 You have named it.
+33:55 Latency.
+33:57 P95.
+33:59 And we want to run on latency.
+34:03 And.
+34:05 I don't want average latency.
+34:07 I want.
+34:09 And.
+34:13 Latency.
+34:15 Is greater than.
+34:17 Let's say 8 seconds.
+34:21 Ideally what should happen.
+34:23 I should get a drop down option.
+34:25 That I want to select average.
+34:27 I want to create.
+34:29 I want to create.
+34:31 I want to create.
+34:33 I want to select average.
+34:35 I want to do total.
+34:37 But I am not getting that option.
+34:39 Otherwise other things.
+34:41 Are perfect.
+34:43 Simply I want to say.
+34:45 That the P95 latency is.
+34:47 Greater than.
+34:49 7 or 8 seconds in the last.
+34:51 60 minutes.
+34:53 And from here what I have to do.
+34:55 Select Slack.
+34:57 Connect your Slack account.
+34:59 And it will send me a message on Slack.
+35:01 So setup is very simple.
+35:03 The only problem is.
+35:05 I am not able to select.
+35:07 P95 latency.
+35:09 Instead it is forcing me.
+35:11 To select average.
+35:13 Latency.
+35:15 That's the problem.
+35:17 Tarun has.
+35:19 Searched online and said.
+35:21 That's expected behavior not a bug on your end.
+35:23 According to Langsmith's docs.
+35:25 The latency metric is specifically defined.
+35:27 As average run execution time.
+35:29 Langsmith's latency metric measures.
+35:31 Average run execution time.
+35:33 Used to track application latency.
+35:35 And alerts on spikes.
+35:37 There is no option to switch it to P50 or P99.
+35:39 Unlike errors on.
+35:41 Okay that's bad.
+35:43 I guess it should be.
+35:45 Will we do it on average then?
+35:47 Let me think about this.
+35:49 Why they didn't give it for P95.
+35:51 What could be the reason.
+35:53 P95.
+35:55 Basically it tells us.
+35:57 That how much is our tail latency.
+35:59 Basically.
+36:01 Our.
+36:03 Some.
+36:05 Users of our distribution.
+36:07 Who are feeling more time.
+36:09 In getting the answer.
+36:11 How much time is taking them.
+36:13 Whereas average latency.
+36:15 Tells about everyone.
+36:17 Basically P95.
+36:19 Because P95.
+36:21 Is basically outliers.
+36:23 So because outliers.
+36:25 Because of P95.
+36:27 System will raise an alert.
+36:29 Maybe that is not the use case.
+36:31 All the public.
+36:33 Is getting more latency.
+36:35 That is a use case for alert.
+36:37 I don't know.
+36:39 Not completely agreeing with the logic.
+36:41 But I am pretty sure.
+36:43 They must have built the system.
+36:45 But again.
+36:47 Okay.
+36:49 I just wanted to show you.
+36:51 How you set up alerts.
+36:53 So how you make an alert for cost.
+36:55 Simply in cost.
+36:57 Total LLM cost is.
+36:59 Greater than.
+37:01 $5 in the last 60 minutes.
+37:03 If this limit breaches.
+37:05 Then our system will.
+37:07 Message us on Slack.
+37:09 That something is wrong.
+37:11 In last one hour $10 has gone.
+37:13 So this is how you.
+37:15 Set up alerts.
+37:17 Using Lansmith.
+37:19 Understand the concept.
+37:21 If you do this.
+37:23 Then you will be able to use Lansmith.
+37:25 Let's focus on the concept.
+37:27 If we summarize the discussion.
+37:29 So what we are able to do.
+37:31 We.
+37:33 Are able to trace this operational.
+37:35 Metrics.
+37:37 And we have.
+37:39 Plotted it on a dashboard.
+37:41 And we are able to.
+37:43 Make alerts around it.
+37:45 So in a way.
+37:47 We have this ops part.
+37:49 We have completed this ops part.
+37:51 If we go here.
+37:53 Step by step.
+37:55 We have run it 5 times.
+37:57 Made a dashboard.
+37:59 We have learned to make alerts.
+38:01 Although P95 alert.
+38:03 Is not being made.
+38:05 Average latency alert is being made.
+38:07 So guys we have done it.
+38:09 Let me know if you have any questions.
+38:11 Process I guess you should understand.
+38:13 That is more important.
+38:15 Tool to tool things will vary.
+38:17 Based on volume.
+38:19 Does it really provide any statistical measure.
+38:21 It's important.
+38:23 In a way.
+38:25 That it tells you.
+38:27 Your sad users.
+38:29 Who are taking more time.
+38:31 To find the answer.
+38:33 How sad they are.
+38:35 You get a sense of it.
+38:37 That is why P95.
+38:39 Latency values exist.
+38:41 In that sense it's important.
+38:43 Maybe for alerting it's not required.
+38:45 Because general population.
+38:47 Is not represented.
+38:49 It's the representation of outliers.
+38:51 So you may not want to raise alerts.
+38:53 For this reason.
+38:55 That Langsmith didn't give you this option.
+38:57 But they are giving you an option.
+38:59 On the basis of average latency.
+39:01 One more question.
+39:03 If we have to set up a.
+39:05 Sensitive latency alert.
+39:07 What is sensitive.
+39:09 I guess you are trying to write.
+39:11 Sensitive.
+39:13 Can set time to a lower value.
+39:15 Like 2 minutes rather than 5 minutes of average time.
+39:17 No.
+39:19 It comes from your SLO.
+39:21 Service level objective.
+39:23 What limit can you bear.
+39:25 And if it's more than that.
+39:27 Then you won't bear.
+39:29 It comes from business use case.
+39:31 For example.
+39:33 If you have made a research assistant.
+39:35 Research assistant will take time.
+39:37 First do research.
+39:39 Then synthesize it.
+39:41 And it will take.
+39:43 One minute also.
+39:45 It depends on the business use case.
+39:47 It comes from your SLO.
+39:49 What is that number.
+39:51 On the basis of that.
+39:53 You set up.
+39:55 You don't think about it.
+39:57 It's decision making.
+39:59 You just have to set what is said.
+40:01 That's it.
+40:03 Now we will move to the next.
+40:05 Eval.
+40:07 Which is safety.
+40:09 How to capture and measure.
+40:11 Toxicity.
+40:13 Online.
+40:15 Now you have two options.
+40:17 First option is.
+40:19 The evaluation you created.
+40:21 Offline.
+40:23 For safety.
+40:25 Use that.
+40:27 And the second option is.
+40:29 That you.
+40:31 Langsmith.
+40:33 Gives you.
+40:35 An option to make an online evaluator.
+40:37 Here.
+40:39 You will go to evaluators.
+40:41 Here you get some built in evaluators.
+40:43 Such as.
+40:45 PII leakage.
+40:47 Prompt injection.
+40:49 Toxicity.
+40:51 So you get some built in evaluators.
+40:53 Since these are.
+40:55 Reference free.
+40:57 You can use them directly.
+40:59 For this particular purpose.
+41:01 Toxicity.
+41:03 We are going to use.
+41:05 Built in.
+41:07 Langsmith.
+41:09 Evaluator for toxicity.
+41:11 And I am doing this for two reasons.
+41:13 First reason is.
+41:15 I want to show you.
+41:17 How to make an online evaluator.
+41:19 In a tool like Langsmith.
+41:21 Second.
+41:23 My logic is.
+41:25 Toxicity is an evaluation.
+41:27 In which.
+41:29 It matters more.
+41:31 That whether we are able to detect toxicity.
+41:33 Rather than.
+41:35 What is the way to measure toxicity.
+41:37 Are we writing our code.
+41:39 Or using Langsmith.
+41:41 Here the end goal is.
+41:43 To simply measure whether our system is toxic or not.
+41:45 So if Langsmith is giving me this.
+41:47 Then I can easily use.
+41:49 Its own system.
+41:51 And there is a good chance that Langsmith.
+41:53 Make a better evaluator than me.
+41:55 Because Langsmith is a big company.
+41:57 And if their researchers have made it.
+41:59 Then it could be better than our.
+42:01 Toxicity Eval.
+42:03 Which we have built offline.
+42:05 So that is why we are using.
+42:07 This particular Eval.
+42:09 Made of Langsmith.
+42:11 So there is nothing to do.
+42:13 You have to go to evaluators.
+42:15 From there.
+42:17 In safety.
+42:19 You have to select the toxicity one.
+42:21 And you can configure it here.
+42:23 And it will start working.
+42:25 I will tell you. Its very simple.
+42:27 Name is automatically filled.
+42:29 So the application is automatically selected.
+42:31 From here you can select a model.
+42:33 That toxicity.
+42:35 Basically at the end everything is LLM as a judge.
+42:37 So here our LLM as a judge.
+42:39 Is.
+42:41 GPT 5.6.
+42:42 Tera selected. But again you can select.
+42:44 Any other model provider.
+42:46 It is on you.
+42:50 So we are letting it stay here.
+42:52 After that here is a prompt.
+42:54 A system prompt.
+42:56 With the help of which.
+42:58 You can change it.
+43:00 If you want.
+43:02 You can change it in this prompt.
+43:04 You have got this option.
+43:06 But since again I am relying on Langsmith.
+43:08 That if they have made such a big platform.
+43:10 Then the toxicity.
+43:12 Inbuilt.
+43:14 Evaluator.
+43:16 That would be good.
+43:18 That is why I will not change this prompt.
+43:20 Ok.
+43:22 There is no need to change anything else here.
+43:24 Now you have to come here.
+43:26 And you have to select from here.
+43:28 Tracing. Not data sets.
+43:30 If you select data sets.
+43:32 Then it will become an offline evaluation.
+43:34 I told you. You have to select tracing.
+43:36 We have selected it.
+43:38 Now here is an interesting thing.
+43:40 Sampling rate. Do you remember what is sampling rate?
+43:42 And can you tell me what will happen.
+43:44 If I keep it at 100%.
+43:46 I will check the chat.
+43:48 Please tell me. We have discussed this.
+43:50 That is why I am asking you.
+43:52 Can you tell me if the sampling rate is 100.
+43:54 What does it mean?
+43:56 What will happen?
+43:58 Exactly.
+44:00 All traces will be evaluated.
+44:02 So if.
+44:04 In one day.
+44:06 50,000 queries are coming on my platform.
+44:08 Meaning 50,000 traces are being captured.
+44:10 So this toxicity.
+44:12 Evaluator.
+44:14 Will run 50,000 times.
+44:16 Basically we will make GPT 5.6
+44:18 work 50,000 times daily.
+44:20 So you can.
+44:22 Actually calculate.
+44:24 And sense it.
+44:26 That we are going to spend a lot.
+44:28 Even the evaluation will cost.
+44:30 So what we do.
+44:32 We do sample.
+44:34 Basically we will say.
+44:36 Rather than sampling.
+44:38 Rather than evaluating all the traces.
+44:40 For toxicity.
+44:42 Just randomly.
+44:44 Pick 30% of the samples.
+44:46 And on those 30%.
+44:48 You.
+44:50 Measure the toxicity.
+44:52 We will understand that too.
+44:54 In a way we are saying.
+44:56 We are trying to estimate the population.
+44:58 With a sample.
+45:00 If I evaluate 10,000 traces.
+45:02 It can give us a fair picture.
+45:04 Of how much toxicity.
+45:06 Is spreading in 50,000 traces.
+45:08 That is why this sampling rate.
+45:10 Parameter is here.
+45:12 Now for now.
+45:14 I am keeping it 100%.
+45:16 Because I want.
+45:18 To calculate the toxicity.
+45:20 But in a proper production setup.
+45:22 The sampling rate will depend on your budget.
+45:24 I really hope this is clear.
+45:26 Now.
+45:28 After that.
+45:30 You have to provide your open AI key.
+45:32 Otherwise.
+45:34 It will not work.
+45:36 Because you will take the expense.
+45:38 So I will quickly go to my.
+45:40 Environment file.
+45:42 And I know again.
+45:44 You will see my key.
+45:46 But don't worry.
+45:48 I will delete it after class.
+45:50 I will simply paste it here.
+45:52 Click on save.
+45:54 And we are done.
+45:56 And here too. Click on save.
+45:58 Save evaluator.
+46:00 And our.
+46:02 Evaluator is created now.
+46:04 You can see.
+46:06 If you go to evaluators.
+46:08 Then we have one evaluator.
+46:10 To measure the toxicity.
+46:12 Now I will run it.
+46:14 We will run a trace.
+46:16 And it will be seen.
+46:18 That we will measure the toxicity.
+46:20 Online.
+46:22 So I will go back to my code.
+46:24 And.
+46:26 Go back to rag pipeline.
+46:28 I will add a question.
+46:30 What are.
+46:32 LLM.
+46:34 Leaderboards.
+46:38 Simple question to ask. Obviously.
+46:40 There will be no toxicity in this.
+46:42 Done.
+46:44 If we go back.
+46:46 To tracing.
+46:48 Then a new trace will come.
+46:50 What are LLM leaderboards.
+46:52 This is the trace.
+46:54 Now here is an important thing.
+46:56 Even though we have created our toxicity.
+46:58 Evaluator. But it.
+47:00 Immediately does not give you the result.
+47:02 My observation with this tool.
+47:04 With the landsmith.
+47:06 It takes a little time.
+47:08 2-3 minutes. So trace comes.
+47:10 After that.
+47:12 It is triggered.
+47:14 And measures the toxicity.
+47:16 And shows you here.
+47:18 But it takes some.
+47:20 Amount of time. It also varies.
+47:22 So it takes 2-3 minutes.
+47:24 I will refresh it again.
+47:26 And show you. Maybe it is done.
+47:28 It has not come yet.
+47:30 So let's wait.
+47:32 Let's see. Is it captured or not.
+47:34 I mean.
+47:36 Is it evaluated or not.
+47:38 Here.
+47:40 In the feedback.
+47:42 It is written. Toxicity is 0.
+47:44 If you click on it.
+47:46 It will explain you.
+47:48 Why it gave the score.
+47:50 It is written. The response is explanatory and professional.
+47:52 It contains no personal attacks.
+47:54 Basically it explained.
+47:56 And yeah.
+47:58 Your online eval is working.
+48:00 On this particular trace.
+48:02 It works in this way.
+48:04 We have just created.
+48:06 A safety.
+48:08 Eval. Which works online.
+48:10 You can do the rest in the same way.
+48:12 Again.
+48:14 You have to go to evaluators.
+48:16 Click on plus.
+48:18 And.
+48:20 From here you can select.
+48:22 Let's say PII leakage.
+48:24 Bias and fairness.
+48:26 This correctness is different.
+48:28 This is a reference.
+48:30 Free correctness thing.
+48:32 Remove it for now.
+48:34 So yeah.
+48:36 This is how you create a.
+48:38 Online safety eval.
+48:40 For this also.
+48:42 What can we do.
+48:44 Go to monitoring.
+48:46 We can go to our custom dashboard.
+48:48 And we can add a chart.
+48:50 So the name of this chart will be.
+48:54 Toxicity.
+48:56 And.
+48:58 What we will do in this.
+49:00 We will go to feedback in pick metric.
+49:02 Click on feedback.
+49:04 Now again.
+49:06 Toxicity is not showing.
+49:08 And.
+49:10 This happens. Langsmith is slow to react.
+49:12 I will show you later.
+49:14 So here.
+49:16 Toxicity will start showing.
+49:18 Some internal registries are created.
+49:20 Maybe they haven't been created.
+49:22 For this particular new.
+49:24 Evaluator which we have created.
+49:26 But yeah.
+49:28 Toxicity will start showing.
+49:30 You just have to select toxicity.
+49:32 And the chart will show.
+49:34 I will make it after some time.
+49:36 Let's wait.
+49:38 Let's exit.
+49:40 And go back to tracing.
+49:42 And again.
+49:44 We go.
+49:46 Here.
+49:48 After that.
+49:50 We created the toxicity one.
+49:52 We couldn't make this graph.
+49:54 This is our current state.
+49:56 We did this one.
+49:58 We did the safety one.
+50:00 Now we just have to set up the quality one.
+50:02 So I will wait.
+50:04 Let me know if you have any doubts.
+50:06 Can it measure the toxic content in the input?
+50:08 Or.
+50:10 It gives a score of 0 to 100.
+50:12 So depending on how much toxicity is there.
+50:14 In your answer.
+50:16 That score increases.
+50:18 If there is too much toxic content.
+50:20 It will give it to 100.
+50:22 If it is too less.
+50:24 It will give it to 0.
+50:26 And the reason also tells.
+50:28 Why did he give that score?
+50:30 It will tell the exact thing.
+50:32 Because this was mentioned.
+50:34 That is why I gave it this score.
+50:36 So it is very interpretable.
+50:38 No no no.
+50:40 We don't care about the user's question.
+50:42 We want to see.
+50:44 How our system is reacting.
+50:46 That matters.
+50:48 The user is free.
+50:50 He can type anything.
+50:52 You will hit him at home.
+50:54 Now.
+50:56 Last part of the online evals.
+50:58 We have to.
+51:00 Measure the quality metrics.
+51:02 We have to.
+51:04 Measure them.
+51:06 Now see.
+51:08 The tricky part here.
+51:10 That.
+51:12 For these.
+51:14 Metrics.
+51:16 You exactly.
+51:18 That.
+51:20 Evals.
+51:22 Should run.
+51:24 Which you made in offline setting.
+51:26 Using deep eval.
+51:28 Basically.
+51:30 What I am trying to say is.
+51:32 For your.
+51:34 Quality metrics.
+51:36 Your offline eval.
+51:38 And online eval should be same.
+51:40 If both are not same.
+51:42 For example.
+51:44 For offline you used deep eval.
+51:46 And for online.
+51:48 You are using.
+51:50 Langsmith's evaluator.
+51:52 For example.
+51:54 If someone sees me.
+51:56 I can show you.
+51:58 Like this.
+52:00 We need answer relevance.
+52:02 So what we did.
+52:04 In offline setup.
+52:06 We used deep eval.
+52:08 To calculate answer relevance.
+52:10 And for online.
+52:12 We used this.
+52:14 Which Langsmith is offering us.
+52:16 Why it's not good.
+52:18 Can someone explain why.
+52:20 Why.
+52:22 It's not good.
+52:24 To have different quality evals.
+52:26 For offline and online.
+52:28 What could be the reason.
+52:30 Why I am saying this.
+52:32 When I did this for toxicity.
+52:34 For toxicity.
+52:36 In offline.
+52:38 I used deep eval.
+52:40 For online.
+52:42 I used Langsmith.
+52:44 Both should be same.
+52:46 You can't do two different evalations.
+52:48 Can you tell me.
+52:50 What could be the reasoning behind this.
+52:52 Very simple reasoning.
+52:54 Reasoning is.
+52:56 These are like.
+52:58 Very strict numbers.
+53:00 If you remember.
+53:02 Our contextual relevancy score.
+53:04 Was around 45.
+53:06 Do you remember.
+53:08 And this 45 came.
+53:10 With the help of deep eval.
+53:12 When we made it in deep eval.
+53:14 But.
+53:16 If we.
+53:18 Use Langsmith.
+53:20 It could be 55.
+53:22 Because.
+53:24 It's a completely different setup.
+53:26 Prompt could be different.
+53:28 Setup could be different.
+53:30 Tool's internal calculation.
+53:32 Contextual relevance calculation.
+53:34 Deep eval method.
+53:36 And Langsmith method.
+53:38 Could be completely different.
+53:40 There will be no comparison between these two numbers.
+53:42 I can't say.
+53:44 That in offline.
+53:46 My contextual relevance was 45.
+53:48 And in online it's 55.
+53:50 They are not on the same baseline.
+53:52 If I.
+53:54 Use deep eval.
+53:56 In online setup.
+53:58 And it's 38.
+54:00 Now they are on the same baseline.
+54:02 I am using the exact same evaluation.
+54:04 And I am getting different numbers.
+54:06 So it makes sense.
+54:08 Because.
+54:10 They are performing bad in online.
+54:12 But if you change the evaluation technique.
+54:14 Then there is no meaning of these numbers.
+54:16 That is why it is always recommended.
+54:18 That when you are talking about.
+54:20 Quality metrics.
+54:22 Such as contextual relevance.
+54:24 Faithfulness. Answer relevance.
+54:26 You have to run the same eval.
+54:28 For both the situations.
+54:30 Offline and online.
+54:32 Then only these numbers will make sense.
+54:34 From 90 to 85.
+54:36 Which means the application is performing bad.
+54:38 In online setup.
+54:40 I hope I was able to convince you.
+54:42 Is it clear guys? This is a very important point.
+54:44 Someone can actually ask this in the interview.
+54:46 Why did you use the same.
+54:48 Setup.
+54:50 Both online and offline.
+54:52 I will tell you how to do it.
+54:54 But is this point clear that we will use the same.
+54:56 Deep eval.
+54:58 We are not going to use Langsmith's.
+55:00 Evaluator.
+55:02 Or we will not create a new evaluator.
+55:04 We will use the same evaluator for the quality metrics.
+55:06 For toxicity.
+55:08 That is why it worked.
+55:10 Because we have to stop toxicity.
+55:12 Toxicity is to be minimized.
+55:14 You can apply the same logic here.
+55:16 And you can use the deep eval.
+55:18 Toxicity evaluator.
+55:20 I just wanted to show you the variation.
+55:22 I wanted to show you how to set up in Langsmith.
+55:24 That is why I did it.
+55:26 But ideally you have to make sure.
+55:28 Same things.
+55:30 So that you can compare your offline and online numbers.
+55:32 That is the main idea.
+55:34 Now let's discuss.
+55:36 How to do this work.
+55:38 How to.
+55:40 In online setup.
+55:42 We will run our offline eval.
+55:44 Let's discuss that.
+55:46 So here we have to.
+55:48 Use software.
+55:50 To do this.
+55:52 So basically what will happen.
+55:54 That.
+55:56 We have deployed our whole code.
+55:58 We have deployed our whole code.
+56:00 We have deployed it.
+56:02 Suppose it is deployed on AWS.
+56:04 Suppose it is deployed on AWS.
+56:06 This whole code.
+56:08 This whole code has been deployed on AWS.
+56:10 This whole code has been deployed on AWS.
+56:12 So what we will do here.
+56:14 We will run a.
+56:16 Background.
+56:18 Service.
+56:20 Basically we will run a code.
+56:22 Or you can say a cron job.
+56:24 We will run.
+56:26 Cron job is basically.
+56:28 When you say a cron job.
+56:30 Then it gets triggered.
+56:32 So we have run a cron job.
+56:34 Which will run every 5 minutes.
+56:36 And what will be the work.
+56:38 That.
+56:40 Our.
+56:42 Offline eval files.
+56:44 Basically these files.
+56:46 Basically these files.
+56:48 Which we have created here.
+56:50 Which we have created here.
+56:52 Suppose.
+56:54 This one.
+56:56 Which has all three of our metrics.
+56:58 Will run this.
+57:00 And as soon as it runs.
+57:02 Then we.
+57:04 Will get.
+57:06 Our score.
+57:08 For these three metrics.
+57:10 And we will send those three scores.
+57:12 Back to.
+57:14 Langsmith.
+57:16 There is only one problem.
+57:18 That this file.
+57:20 This one.
+57:22 We have coded it in this way.
+57:24 That this.
+57:26 Works only.
+57:28 On golden.
+57:30 Dataset.
+57:32 Right. To run in offline setup.
+57:34 Means to run on golden data set.
+57:36 But the flow here.
+57:38 What will happen.
+57:40 When our cron job will run.
+57:42 When our cron job will run.
+57:44 Then.
+57:46 What will it do.
+57:48 It will go to the landsmith.
+57:50 And in the last 5 minutes.
+57:52 In this.
+57:54 It will fetch all the traces.
+57:56 And on them.
+57:58 We have to run our evaluator.
+58:00 So the setup is a little different.
+58:02 That's why we have to make one.
+58:04 Separate file.
+58:06 We have to make one separate file.
+58:08 The whole flow will be something like this.
+58:10 I will tell you.
+58:12 A loop will be running.
+58:14 Which.
+58:16 Every 5 minutes.
+58:18 Our online.
+58:20 Eval file.
+58:22 Will trigger.
+58:24 So now we will make a file.
+58:26 Eval underscore online.
+58:28 Our cron job.
+58:30 Will trigger it every 5 minutes.
+58:32 And what code will be written in this online eval.
+58:34 Will be written.
+58:36 Go to.
+58:38 Landsmith. Capture.
+58:40 All the traces.
+58:42 All the traces.
+58:44 Or 30% of the traces.
+58:46 Depending on the sample rate.
+58:48 Last.
+58:50 5 minutes.
+58:52 Basically we will fetch the most recent traces.
+58:54 And we will give it.
+58:56 Our.
+58:58 Eval functions.
+59:00 Which are written in deep eval.
+59:02 Then what will these eval functions do?
+59:04 Will generate scores.
+59:06 And these scores.
+59:08 Will be sent back.
+59:10 To.
+59:12 Landsmith.
+59:14 And the landsmith will record them.
+59:16 To do the whole work.
+59:18 You will have to.
+59:20 Use the.
+59:22 SDK.
+59:24 When you.
+59:26 Add the uv.
+59:28 To the uv.
+59:30 You can run.
+59:32 Things.
+59:34 Basically what we are doing.
+59:36 We are going to every 5 minutes.
+59:38 We are fetching the most recent traces.
+59:40 And running.
+59:42 Our offline evals.
+59:44 And sending it back.
+59:46 And recording it in the landsmith.
+59:48 This is happening.
+59:50 Can you please let me know.
+59:52 Did you understand the flow in the overview mode?
+59:54 Is it clear?
+59:56 What is happening?
+59:58 We have run a cron job on our server.
+60:00 Whose job is to trigger.
+60:02 Eval.
+60:04 Online.py every 5 minutes.
+60:06 What is the code written in eval.
+60:08 Online.py?
+60:10 Go to landsmith.
+60:12 And bring all the traces.
+60:14 And run.
+60:16 These functions.
+60:18 We have hidden eval.
+60:20 In the functions.
+60:22 We will give the scores.
+60:24 Take the scores back.
+60:26 And put it in the landsmith.
+60:28 This flow will run forever.
+60:30 In a loop.
+60:32 In every 5 minutes.
+60:34 This is how you run offline evals.
+60:36 In an online setting.
+60:38 That is why the landsmith's SDK exists.
+60:40 It is one of the reasons.
+60:42 Why the SDK exists.
+60:44 So let me show you.
+60:46 A small demo of this.
+60:48 Obviously we are not deploying this.
+60:50 We are not running a cron job.
+60:52 What I will do is.
+60:54 What I will do is.
+60:56 I will simply.
+60:58 Create an infinite loop.
+61:00 While loop.
+61:02 Which.
+61:04 Will run.
+61:06 And we will put a sleep.
+61:08 For 5 seconds.
+61:10 And after every 5 seconds.
+61:12 We will repeat the same logic.
+61:14 That's it.
+61:16 This is the code.
+61:18 So look here.
+61:20 This is the code.
+61:22 I will explain it to you.
+61:24 Don't worry.
+61:26 I copied it.
+61:28 Went back to eval.
+61:30 Made a new file.
+61:32 eval.
+61:34 Online.py
+61:36 And I pasted it here.
+61:38 Now look here.
+61:40 What is happening.
+61:42 We imported all these things.
+61:44 After that.
+61:46 The name of our project is.
+61:48 CX Doubt Solver.
+61:50 Our evaluator is the same.
+61:52 Not even GPT 4.
+61:54 We used this in offline.
+61:56 The thresholds are the same.
+61:58 Which we used in offline.
+62:00 We have set the sample rate to 1.
+62:02 Means 100%.
+62:04 And we will run the evaluation.
+62:06 We did 60 polling seconds.
+62:08 So basically every minute.
+62:10 We will repeat this whole thing.
+62:12 All the traces that came in the last minute.
+62:14 We will fetch them.
+62:16 And run the evaluation on them.
+62:18 We made a client.
+62:20 Langsmith client.
+62:22 We are using Langsmith here.
+62:24 And the rest of the code is exactly here.
+62:26 It is written.
+62:28 And we have run this infinite loop.
+62:30 In which we are sleeping for 60 seconds.
+62:32 And then every time.
+62:34 We are evaluating the recent traces.
+62:36 The function is written here.
+62:38 Score recent traces.
+62:40 Here we are.
+62:42 Measuring all three things.
+62:44 Faithfulness, relevancy, contextual relevancy.
+62:46 For each of the traces.
+62:48 This is the setup. This is the code.
+62:50 Now what we have to do.
+62:52 We have to run this infinite code.
+62:54 Once you run it.
+62:56 It will keep running.
+62:58 Till you don't close your terminal.
+63:00 Obviously this thing.
+63:02 Won't work in the online setup.
+63:04 Because as soon as the terminal is closed.
+63:06 The service will be closed.
+63:08 So cron job is a better alternative.
+63:10 Right now we are not doing deployment.
+63:12 Or cron jobs.
+63:14 This is just a simple representation.
+63:16 Of an infinite running service.
+63:18 So I am representing through a simple python code.
+63:20 What we have to do.
+63:22 We have to go to a new terminal.
+63:24 And run this new file.
+63:26 So we have to simply write.
+63:28 eval.eval.
+63:30 eval.eval.
+63:32 Now you have run it.
+63:34 Now it will keep running.
+63:36 It will go to the langsmith every minute.
+63:38 And fetch the last one minute traces.
+63:40 So let's do one thing.
+63:42 Let's create a new trace.
+63:44 For that we go to eval.ragpipeline.
+63:46 And ask a question.
+63:48 And ask a question.
+63:50 And ask a question.
+63:52 And ask a question.
+63:54 And ask a question.
+63:56 Let's go to eval.ragpipeline.
+63:58 And ask a question.
+64:00 What are golden data sets?
+64:02 This is our question.
+64:04 We are running it.
+64:06 This is our answer.
+64:08 Let's go back.
+64:10 To the langsmith.
+64:12 To the tracing.
+64:14 This is our answer.
+64:16 This is our answer.
+64:18 Right now nothing is visible.
+64:20 Nothing is visible in the ad feedback.
+64:22 We have to wait.
+64:24 We will wait for a while.
+64:26 Then the evaluation will be triggered.
+64:28 Meanwhile let's do one thing.
+64:30 Let's go back to monitoring.
+64:32 This is our custom dashboard.
+64:34 Let's create a new chart.
+64:36 And name it
+64:38 Toxicity.
+64:40 Remember we were making this a while ago.
+64:42 Let's hope it will be made now.
+64:44 From here we will select
+64:46 in the feedback.
+64:48 Look. Toxicity is visible.
+64:50 In fact the rest three are visible.
+64:52 Let's do it again.
+64:54 You have to show average toxicity
+64:56 in the chart.
+64:58 Or let's show average only.
+65:00 Let's show average score.
+65:02 Let's click on create.
+65:04 This is our toxicity chart.
+65:06 This is our chart.
+65:08 These charts are made.
+65:10 Let's go back to tracing.
+65:12 Let's go to the most recent tracing.
+65:14 Let's reload it.
+65:16 Look. Toxicity is measured.
+65:18 Let's reload it.
+65:20 Toxicity is measured.
+65:22 But
+65:24 the rest three are not
+65:26 measured yet. We will have to wait.
+65:28 Toxicity is also zero.
+65:30 Obviously.
+65:32 These are all simple use cases.
+65:34 Let's wait for some time.
+65:36 We have done all the things
+65:38 right. Obviously.
+65:40 That's why it is telling the names of the three.
+65:42 Still I will quickly cross check
+65:44 Eval
+65:46 in online. I will quickly check
+65:48 the setup.
+65:50 The name is CXed out solver.
+65:52 The name of the project is correct.
+65:54 CXed out solver
+65:56 GPT 4.0 mini
+65:58 0.7 threshold
+66:00 Sample rate is 1.
+66:02 Sample rate is 1.
+66:04 It will have to do all the traces in the helplessness.
+66:06 Somehow it didn't happen yet.
+66:08 It should have happened.
+66:10 Let's do one thing.
+66:12 Let's run one more.
+66:14 Let's ask one more question.
+66:16 Let's say we asked
+66:18 Why
+66:20 do we need
+66:22 golden data sets?
+66:24 We asked this question.
+66:26 This is done.
+66:28 It started coming.
+66:30 This is the new one. This is the previous one.
+66:32 See this in this.
+66:34 For this particular question,
+66:36 the same deep evaluator
+66:38 gave answer relevancy 0.92.
+66:40 Contextual relevancy is
+66:42 very bad 0.23. But this is for
+66:44 just this question.
+66:46 Faithfulness is 0.75.
+66:48 Let's see the next one.
+66:50 Nothing has been measured in this.
+66:52 Toxicity and the rest three have not been measured.
+66:54 Let's wait a little.
+66:56 There is a little delay.
+66:58 But again,
+67:00 see. Faithfulness 1 came.
+67:02 Answer relevancy 1 came.
+67:04 Toxicity and contextual
+67:06 relevance has not come yet. So let's wait.
+67:08 Contextual relevancy
+67:10 is still low 0.29.
+67:12 Let's wait for toxicity.
+67:14 Whatever it is, I guess you are understanding.
+67:16 This is happening behind the scenes.
+67:18 Again, what can you do?
+67:20 You can go to monitoring.
+67:22 And in your dashboard, you can go and
+67:24 you can create a new chart.
+67:26 This time for
+67:28 let's say answer
+67:30 relevance.
+67:32 And you will go to
+67:34 feedback.
+67:36 You will select answer relevancy.
+67:38 And you
+67:40 can select average or minimum
+67:42 or percentile.
+67:44 Let's say we selected average
+67:46 and created.
+67:48 So this chart is telling us our answer
+67:50 relevance. Over time.
+67:52 You will make it for contextual
+67:54 relevancy. You will make it for
+67:56 faithfulness. And again
+67:58 you can set up alerts.
+68:00 On every individual chart.
+68:02 So this is how you create dashboard.
+68:04 And by looking at this dashboard, you can understand
+68:06 the health of your application
+68:08 in a given period of time.
+68:10 So I hope
+68:12 you are able to understand
+68:14 how this whole thing is working online.
+68:16 This is the last one.
+68:18 This toxicity score is 0.
+68:20 So yeah, this is working now.
+68:22 Let me quickly go back to
+68:24 our plan
+68:26 steps.
+68:28 So
+68:30 this also happened.
+68:32 We have run
+68:34 rag tried script.
+68:36 We have created charts.
+68:38 So that's it.
+68:40 We have done the whole thing.
+68:42 Let's discuss one last thing guys.
+68:44 If you remember
+68:46 I told you a very important
+68:48 point while teaching theory.
+68:50 That
+68:52 your offline
+68:54 evaluation data set
+68:56 we make it
+68:58 over time and strong.
+69:00 How?
+69:02 You can take online
+69:04 analysis and
+69:06 add them to the offline data set.
+69:08 Right?
+69:10 User asked a question for which
+69:12 our system gave very bad results.
+69:14 So that is a very good question
+69:16 to be added to
+69:18 our golden data set.
+69:20 So this is how you
+69:22 increase the size of your
+69:24 golden data set and this is how you
+69:26 make it more powerful.
+69:28 So let me tell you how that exact work is done.
+69:30 For a while,
+69:32 that
+69:34 the most recent question
+69:36 all your metrics are
+69:38 bad.
+69:40 Answer relevancy is bad, Contextual relevancy is bad
+69:42 faithfulness is bad, toxic is also bad.
+69:44 So this is a very good use case.
+69:46 You want to add this to your
+69:48 offline setup so that you can make
+69:50 your system better.
+69:52 So you have a way to do this.
+69:54 What can you do?
+69:56 Here an option is coming
+69:58 called add to data set.
+70:00 So what can you do?
+70:02 You can create a data set
+70:04 for yourself.
+70:06 So suppose your data set name is
+70:08 I want to create a
+70:10 data set.
+70:12 Create from scratch.
+70:14 Here you can create a data set
+70:16 for yourself.
+70:18 Let's say I have named it
+70:20 sample. Description is
+70:22 sample. Connected to the application.
+70:24 Here you can define the schema.
+70:26 What will be the input and output in this.
+70:28 I haven't defined it yet.
+70:30 I will create it like this.
+70:32 So I have a data set
+70:34 called sample.
+70:36 So now what can I do in tracing?
+70:38 Suppose this is my most recent run.
+70:40 It has very poor results.
+70:42 So I want this to be my offline eval part.
+70:44 So what I will do is
+70:46 I will go to this and I will
+70:48 add to data set.
+70:50 I have selected data set sample from here.
+70:52 Now what can you do here?
+70:54 You have got the question.
+70:56 You have got the question.
+70:58 Now here obviously
+71:00 your answer is there.
+71:02 Which your system generated.
+71:04 But it may be wrong.
+71:06 So at this point
+71:08 you can create a reference answer
+71:10 by an expert.
+71:12 So that you can use it offline.
+71:14 For correctness and completeness
+71:16 and other reference based metrics.
+71:18 So here if you want you can type
+71:20 your correct answer.
+71:22 Reference answer. And you can just submit.
+71:24 As soon as you submit
+71:26 then you will see
+71:28 that the question has been added
+71:30 to the data set.
+71:32 And from here what you can do
+71:34 is you can download your data set
+71:36 and merge it
+71:38 with your offline data set.
+71:40 What is better than this
+71:42 is that you can create
+71:44 your golden data sets from the beginning
+71:46 in Langsmith.
+71:48 So the data sets
+71:50 that we were running
+71:52 here.
+71:54 If you want to see all these data sets
+71:56 that we were making on the offline setup.
+71:58 You can make them here.
+72:00 And then with the help of
+72:02 Langsmith SDK
+72:04 you can load the data set.
+72:06 In offline setting also when you are running offline evals
+72:08 you can load it from Langsmith.
+72:10 What is the benefit of that?
+72:12 That you have a golden data set at a single place.
+72:14 So you can use it
+72:16 for both offline and online.
+72:18 And you can grow the offline one.
+72:20 The important thing is that
+72:22 Langsmith also versioning your data set.
+72:24 So you can see how your data set is
+72:26 growing over time.
+72:28 You can also roll back to a previous state
+72:30 that I want to see the golden data set
+72:32 that I have 6 months ago.
+72:34 So you can go there also.
+72:36 So a much better approach is that rather than
+72:38 having offline golden data set
+72:40 like in our files
+72:42 you actually start creating your data sets
+72:44 here.
+72:46 There are two benefits from this.
+72:48 First, you can click on your tracing
+72:50 and add it to your data set.
+72:52 Second, it is also versioning.
+72:54 And you can use it offline also.
+72:56 So this is a much better approach.
+72:58 With the help of this you can create
+73:00 the whole loop
+73:02 connecting offline and online.
+73:04 Very powerfully.
+73:06 So this is how teams do it
+73:08 in the proper production setup.
+73:10 So yeah
+73:12 this was one interesting point
+73:14 that I wanted to tell you.
+73:16 I have shown you a small demo.
+73:18 With that
+73:20 we have essentially completed
+73:22 an overview of online eval.
+73:24 I didn't show you everything
+73:26 but I gave you an idea of everything.
+73:28 Now you can create
+73:30 any complex online eval
+73:32 system on the basis of this idea
+73:34 using any tool I guess.
+73:36 Because the concept is the same.
+73:38 You are using Lansmith or Lanfees.
+73:40 The concept will be the same.
+73:42 You just need to know the concept.
+73:44 With that, super happy to announce
+73:46 our rag eval part.
+73:48 It took a little time. I am really sorry about that.
+73:50 I got sick in between.
+73:52 Otherwise we would have done this same session a week earlier.
+73:56 So yeah, these 7-8 sessions
+73:58 from rag eval part 1
+74:00 to rag eval part 8
+74:02 if you see this
+74:04 I am pretty sure you will be able to impress
+74:06 any interviewer who will ask you
+74:08 rag eval questions. That is my guarantee.
+74:10 Yeah, that's it.
+74:12 That's it for today.
+74:14 From next session we will start with
+74:16 agent evals.
+74:18 Which will be a little easy now
+74:20 because we have read everything.
+74:22 So it won't take that much time.
